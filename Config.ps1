@@ -59,18 +59,18 @@ $FunctionDependencies = @( 'Show-ExceptionDetails','Get-ScriptDirectory' ,
     })
      Write-Host "[CONFIG] " -f Blue -NoNewLine
     Write-Host "CHECKING CORE MODULE DEPENDENCIES..."
-    $ModuleName='CodeCastor.PowerShell.Core'
+    $ModuleName='PowerShell.Core'
     $ModPtr = Get-Module "$ModuleName" -ErrorAction Stop    
     if($ModPtr -eq $null){
             Write-Host "`t`t[MIS]`t" -f DarkRed -NoNewLine
             Write-Host "$ModuleName"  -f DarkYellow  
             Write-Host "`t`t[INC]`t" -f DarkCyan -NoNewLine
             Write-Host "Including files"  -f DarkGray
-            . "$ENV:pwshtools\src\Exception.ps1"   
-            . "$ENV:pwshtools\src\Module.ps1"
-            . "$ENV:pwshtools\src\Miscellaneous.ps1"
-            . "$ENV:pwshtools\src\Script.ps1"
-            . "$ENV:pwshtools\src\Process.ps1"            
+            . "$ENV:PSModCore\src\Exception.ps1"   
+            . "$ENV:PSModCore\src\Module.ps1"
+            . "$ENV:PSModCore\src\Miscellaneous.ps1"
+            . "$ENV:PSModCore\src\Script.ps1"
+            . "$ENV:PSModCore\src\Process.ps1"            
 
     }
 

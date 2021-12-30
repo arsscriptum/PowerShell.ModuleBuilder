@@ -11,14 +11,61 @@ Param
     [switch]$Quiet    
 )
 
+
+
+function Get-ModuleBuilderRoot{
+
+    if($ENV:PSModuleBuilder -ne $Null){
+        if(Test-Path $ENV:PSModuleBuilder -PathType Container){
+            $PsProfileDevRoot = $ENV:PSModuleBuilder
+            return $ModuleBuilder
+        }
+    }else{
+        $TmpPath = (Get-Item $Profile).DirectoryName
+        $TmpPath = Join-Path $TmpPath 'Projects\PowerShell.ModuleBuilder'
+        if(Test-Path $TmpPath -PathType Container){
+            $ModuleBuilder = $TmpPath
+            return $ModuleBuilder
+        }
+
+    }
+    $mydocuments = [environment]::getfolderpath("mydocuments") 
+    $ModuleBuilder = Join-Path $mydocuments 'PowerShell\Projects\PowerShell.ModuleBuilder'
+    return $ModuleBuilder
+}
+
+
+function Get-PSModuleDevelopmentRoot{
+
+    if($ENV:PSModuleDevelopmentRoot -ne $Null){
+        if(Test-Path $ENV:PSModuleDevelopmentRoot -PathType Container){
+            $PSModuleDevelopmentRoot = $ENV:PSModuleDevelopmentRoot
+            return $PSModuleDevelopmentRoot
+        }
+    }else{
+        $TmpPath = (Get-Item $Profile).DirectoryName
+        $TmpPath = Join-Path $TmpPath 'Module-Development'
+        if(Test-Path $TmpPath -PathType Container){
+            $PSModuleDevelopmentRoot = $TmpPath
+            return $PSModuleDevelopmentRoot
+        }
+
+    }
+    $mydocuments = [environment]::getfolderpath("mydocuments") 
+    $PSModuleDevelopmentRoot = Join-Path $mydocuments 'PowerShell\Module-Development'
+    return $PSModuleDevelopmentRoot
+}
+
+
+
 $Name = (Get-Item $PSScriptRoot).Name
-$DisplayName = 'ModuleBuilder'
+$DisplayName = 'PowerShell.ModuleBuilder'
 $RegistryPath = "$ENV:OrganizationHKCU\$Name"
  Write-Host "[$DisplayName] " -f Blue -NonewLin
  Write-Host " $RegistryPath" -f White
 
-$ModuleBuilderPath = $PSScriptRoot
-$ModuleDevelopmentPath = (Resolve-Path "$ModuleBuilderPath\.." ).Path
+$ModuleBuilderPath = Get-ModuleBuilderRoot
+$ModuleDevelopmentPath =  Get-PSModuleDevelopmentRoot
 $BuildScript = Join-Path $ModuleBuilderPath 'Build.ps1'
 $BuildModuleScript = Join-Path $ModuleBuilderPath 'Build-Module.ps1'
 
@@ -59,7 +106,7 @@ if($Alias){
         Write-Host "[$DisplayName] "  -f Blue -NonewLine
         Write-Host "configuring alias values" -f White    
     }
-    Remove-Alias -Name make -ErrorAction Ignore -Force | Out-null
+    Remove-Alias -Name make -Force | Out-null
     if(Test-Path -Path $BuildScript -PathType Leaf){
         if($Quiet -eq $False){
             Write-Host "[$DisplayName] " -f DarkRed -NonewLine
@@ -67,7 +114,7 @@ if($Alias){
         }
         New-Alias -Name make -Value "$BuildScript" -Description 'Build a module' -Scope Global
     }
-    Remove-Alias -Name makeall -ErrorAction Ignore -Force | Out-null
+    Remove-Alias -Name makeall -Force | Out-null
     if(Test-Path -Path $BuildModuleScript -PathType Leaf){
         if($Quiet -eq $False){
             Write-Host "[$DisplayName] " -f DarkRed -NonewLine

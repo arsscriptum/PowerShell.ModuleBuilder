@@ -260,18 +260,18 @@ try{
             Write-Error -Message "Failed to import file $file $_"
         }
     }
-    $ModuleName='CodeCastor.PowerShell.Core'
+    $ModuleName='PowerShell.Core'
     Import-Module "$ModuleName" -ErrorAction Ignore 
     $ModPtr = Get-Module "$ModuleName" -ErrorAction Ignore    
     if(($ModPtr -eq $null) -Or ($Global:ModuleIdentifier -eq $ModuleName)){    
-        . "$ENV:pwshtools\src\Exception.ps1"   
-        . "$ENV:pwshtools\src\Module.ps1"
-        . "$ENV:pwshtools\src\Miscellaneous.ps1"
-        . "$ENV:pwshtools\src\Script.ps1"
-        . "$ENV:pwshtools\src\Process.ps1"   
-        . "$ENV:pwshtools\src\Parser.ps1"   
-        . "$ENV:pwshtools\src\Directory.ps1"   
-        . "$ENV:pwshtools\src\Converter.ps1"   
+        . "$ENV:PSModCore\src\Exception.ps1"   
+        . "$ENV:PSModCore\src\Module.ps1"
+        . "$ENV:PSModCore\src\Miscellaneous.ps1"
+        . "$ENV:PSModCore\src\Script.ps1"
+        . "$ENV:PSModCore\src\Process.ps1"   
+        . "$ENV:PSModCore\src\Parser.ps1"   
+        . "$ENV:PSModCore\src\Directory.ps1"   
+        . "$ENV:PSModCore\src\Converter.ps1"   
     }
     If( $PSBoundParameters.ContainsKey('SkipDependencyCheck') -eq $False ){
         Write-Host "===============================================================================" -f DarkRed
@@ -474,7 +474,9 @@ function ConvertFrom-Base64CompressedScriptBlock {
 }
 
 # For each scripts in the module, decompress and load it.
-
+# Set a flag in the Script Scope so that the scripts know we are loading a module
+# so he can have a specific logic
+`$Script:LoadingState = $True
 `$ScriptList = @($( ($ScriptList | ForEach-Object { "'$_'" }) -join ','))
 `$ScriptList | ForEach-Object {
     `$ScriptId = `$_
@@ -489,7 +491,7 @@ function ConvertFrom-Base64CompressedScriptBlock {
         Write-Error `"ERROR IN script `$ScriptId . Details `$_`"
     }
 }
-
+`$Script:LoadingState = $False
 
 "@
 

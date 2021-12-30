@@ -79,11 +79,11 @@ function Get-Script([string]$prop){
 $ScriptPath = split-path $script:MyInvocation.MyCommand.Path
 $ScriptFullName =(Get-Item -Path $script:MyInvocation.MyCommand.Path).DirectoryName
 
-
-
+# C:\DOCUMENTS\PowerShell\Projects\PowerShell.ModuleBuilder
+# $ENV:PSModuleBuilder
 try{
     $CurrentPath = (Get-Location).Path
-    $ModuleBuilderName = 'CodeCastor.PowerShell.ModuleBuilder'
+    $ModuleBuilderName = 'PowerShell.ModuleBuilder'
     $RegistryPath = "$ENV:OrganizationHKCU\$ModuleBuilderName"
     $BuildScriptPath = (Get-ItemProperty $RegistryPath -Name 'BuildScriptPath' -ErrorAction Stop).BuildScriptPath
     $ModuleBuilderPath = (Get-ItemProperty $RegistryPath -Name 'ModuleBuilderPath' -ErrorAction Stop).ModuleBuilderPath
@@ -92,6 +92,11 @@ try{
     if(-not(Test-Path -Path $ModuleDevelopmentPath -PathType Container)){ throw "Could not locate Module Development Path" }
     if(-not(Test-Path -Path $BuildScriptPath -PathType Leaf)){ throw "Could not locate Build Script Path" }
 
+    Write-Host "===============================================================================" -f DarkRed
+    Write-Host "Build Script       Path `t" -NoNewLine -f DarkYellow ; Write-Host "$BuildScriptPath" -f Gray 
+    Write-Host "Module Builder     Path `t" -NoNewLine -f DarkYellow;  Write-Host "$ModuleBuilderPath" -f Gray 
+    Write-Host "Module Development Path `t" -NoNewLine -f DarkYellow;  Write-Host "$ModuleDevelopmentPath" -f Gray 
+    Write-Host "===============================================================================" -f DarkRed   
     If( $PSBoundParameters.ContainsKey('Name') -eq $False ){
         $Name = (Get-Item $CurrentPath).Name
     }
@@ -104,7 +109,8 @@ try{
         ForEach($mdir in $FilteredDir){
             $fullname = $mdir.Fullname
             $mname = $mdir.Name
-    
+            Write-Host "Directory Fullname `t" -NoNewLine -f DarkYellow;  Write-Host "$fullname" -f Gray 
+            Write-Host "Directory     name `t" -NoNewLine -f DarkYellow;  Write-Host "$mname" -f Gray 
             Write-ChannelMessage "Switching to $fullname"
             pushd $fullname
             $gitstr = Get-GitRevision -r
