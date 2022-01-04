@@ -476,7 +476,7 @@ function ConvertFrom-Base64CompressedScriptBlock {
 # For each scripts in the module, decompress and load it.
 # Set a flag in the Script Scope so that the scripts know we are loading a module
 # so he can have a specific logic
-`$Script:LoadingState = $True
+`$Script:LoadingState = `$True
 `$ScriptList = @($( ($ScriptList | ForEach-Object { "'$_'" }) -join ','))
 `$ScriptList | ForEach-Object {
     `$ScriptId = `$_
@@ -491,7 +491,7 @@ function ConvertFrom-Base64CompressedScriptBlock {
         Write-Error `"ERROR IN script `$ScriptId . Details `$_`"
     }
 }
-`$Script:LoadingState = $False
+`$Script:LoadingState = `$False
 
 "@
 
