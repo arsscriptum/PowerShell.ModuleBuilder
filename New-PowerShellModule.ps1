@@ -35,15 +35,6 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     
-    [ValidateScript({
-        if(-Not ($_ | Test-Path) ){
-            throw "File or folder does not exist"
-        }
-        if(-Not ($_ | Test-Path -PathType Container) ){
-            throw "The Path argument must be a Directory. Files paths are not allowed."
-        }
-        return $true 
-    })]
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Path of the module to compile, is not specified, takind current path") ]
     [String]$Path,
@@ -57,9 +48,23 @@ param(
 
 
 
+
+
+
 #Requires -Version 5
 
 Try {
+
+    if(Test-Path -Path $Path -PathType Container){
+        throw "Folder $Path already exists... Use a new folder name."
+        return
+    }
+    if(-not(Test-Path -Path $Path)){
+        $Null = New-Item -Path $Path -ItemType Directory -Force -ErrorAction Ignore
+    }
+
+
+
     $Path  = (Resolve-Path $Path).Path
 
     ## Set the script execution policy for this process
@@ -123,7 +128,9 @@ Try {
     Write-Host '[COPY] ' -f DarkCyan -NoNewLine
     Write-Host "$Script:TemplateModulePath ==> $Script:ModulePath" -f Gray
     
-    $Out = &"$ROBOCOPY" "`"$TemplateModulePath`"" "`"$ModulePath`"" "/MIR"
+    Copy-Item "$Script:TemplateModulePath\*" "$Script:ModulePath" -Force -Recurse
+
+    #$Out = &"$ROBOCOPY" "`"$TemplateModulePath`"" "`"$ModulePath`"" "/MIR"
 
     if($NoCompile -eq $False){
         pushd "$ModulePath"
