@@ -13,63 +13,6 @@ param (
 
 
 
-
-#===============================================================================
-# OrganizationHKCU
-#===============================================================================
-if( ($ENV:OrganizationHKCU -eq $null) -Or ($ENV:OrganizationHKCU -eq '') )
-{
-    Write-Host "===============================================================================" -f DarkRed    
-    Write-Host "A required environment variable needs to be setup (user scope)     `t" -NoNewLine -f DarkYellow ; Write-Host "$Script:OrganizationHKCU" -f Gray 
-    $OrgIdentifier = "Development-" + "$ENV:USERNAME"
-    $OrganizationHKCU = "HKCU:\Software\" + "$OrgIdentifier"
-
-    [Environment]::SetEnvironmentVariable('OrganizationHKCU',$OrganizationHKCU,"User")
-
-    Write-Host "Setting OrganizationHKCU --> $OrganizationHKCU [User]"  -ForegroundColor Yellow
-    $Null = New-Item -Path "$OrganizationHKCU" -Force -ErrorAction Ignore
-
-    $Cmd = Get-Command "RefreshEnv.cmd"
-    if($Cmd){
-        $RefreshEnv = $Cmd.Source
-        &"$RefreshEnv"
-    }
-
-    $ENV:OrganizationHKCU = "$OrganizationHKCU"
-
-}
-
-$Name = $script:MyInvocation.MyCommand.Name
-$i = $Name.IndexOf('.')
-$Script:CurrentScript = $Name.SubString(0, $i)
-$Script:CurrPath=$PSScriptRoot #Split-Path $script:MyInvocation.MyCommand.Path
-
-
-#===============================================================================
-# Script Variables
-#===============================================================================
-$Script:CurrentRunningScript           = $Script:CurrentScript
-$Script:Time                           = Get-Date
-$Script:Date                           = $Time.GetDateTimeFormats()[19]
-
-Write-Host "===============================================================================" -f DarkRed
-Write-Host "CONFIGURATION of DEVELOPMENT ENVIRONMENT for BUILD AUTOMATION " -f DarkYellow;
-Write-Host "===============================================================================" -f DarkRed    
-Write-Host "Current Path     `t" -NoNewLine -f DarkYellow ; Write-Host "$Script:CurrPath" -f Gray 
-Write-Host "Current Script   `t" -NoNewLine -f DarkYellow;  Write-Host "$Script:CurrentScript" -f Gray 
-
-Write-Host "Setting PSModuleBuilder to `t" -NoNewLine -f DarkYellow;  Write-Host "$Script:CurrPath" -f Gray 
-[Environment]::SetEnvironmentVariable('PSModuleBuilder',$Script:CurrPath,"User")
-
-
-return
-
-#===============================================================================
-# ModuleBuilderRoot Variable
-#===============================================================================
-
-
-
 function Get-ModuleBuilderRoot{
 
     if($ENV:PSModuleBuilder -ne $Null){
@@ -111,6 +54,61 @@ function Get-PSModuleDevelopmentRoot{
     $PSModuleDevelopmentRoot = Join-Path $mydocuments 'PowerShell\Module-Development'
     return $PSModuleDevelopmentRoot
 }
+
+
+#===============================================================================
+# OrganizationHKCU
+#===============================================================================
+if( ($ENV:OrganizationHKCU -eq $null) -Or ($ENV:OrganizationHKCU -eq '') )
+{
+    Write-Host "===============================================================================" -f DarkRed    
+    Write-Host "A required environment variable needs to be setup (user scope)     `t" -NoNewLine -f DarkYellow ; Write-Host "$Script:OrganizationHKCU" -f Gray 
+    $OrgIdentifier = "Development-" + "$ENV:USERNAME"
+    $OrganizationHKCU = "HKCU:\Software\" + "$OrgIdentifier"
+
+    [Environment]::SetEnvironmentVariable('OrganizationHKCU',$OrganizationHKCU,"User")
+
+    Write-Host "Setting OrganizationHKCU --> $OrganizationHKCU [User]"  -ForegroundColor Yellow
+    $Null = New-Item -Path "$OrganizationHKCU" -Force -ErrorAction Ignore
+
+    $Cmd = Get-Command "RefreshEnv.cmd"
+    if($Cmd){
+        $RefreshEnv = $Cmd.Source
+        &"$RefreshEnv"
+    }
+
+    $ENV:OrganizationHKCU = "$OrganizationHKCU"
+
+}
+
+$Name = $script:MyInvocation.MyCommand.Name
+$i = $Name.IndexOf('.')
+$Script:CurrentScript = $Name.SubString(0, $i)
+$Script:CurrPath=$PSScriptRoot #Split-Path $script:MyInvocation.MyCommand.Path
+
+
+#===============================================================================
+# Script Variables
+#===============================================================================
+$Script:CurrentRunningScript           = $Script:CurrentScript
+$Script:Time                           = Get-Date
+$Script:Date                           = $Time.GetDateTimeFormats()[19]
+
+Write-Host "===============================================================================" -f DarkRed
+Write-Host "CONFIGURATION of DEVELOPMENT ENVIRONMENT for MODULE BUILDER" -f DarkYellow;
+Write-Host "===============================================================================" -f DarkRed    
+Write-Host "Current Path     `t" -NoNewLine -f DarkYellow ; Write-Host "$Script:CurrPath" -f Gray 
+Write-Host "Current Script   `t" -NoNewLine -f DarkYellow;  Write-Host "$Script:CurrentScript" -f Gray 
+
+Write-Host "Setting PSModuleBuilder to `t" -NoNewLine -f DarkYellow;  Write-Host "$Script:CurrPath" -f Gray 
+[Environment]::SetEnvironmentVariable('PSModuleBuilder',$Script:CurrPath,"User")
+
+
+#===============================================================================
+# ModuleBuilderRoot Variable
+#===============================================================================
+
+
 
 
 
