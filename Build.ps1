@@ -66,12 +66,22 @@ param(
     [Alias('d')]
     [switch]$Deploy,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Deploy after build") ]
+    [Alias('s')]
+    [switch]$Sign,    
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Skip DependencyCheck") ]
     [Alias('nodep')]
     [switch]$SkipDependencyCheck,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Validate function names") ]
-    [switch]$Strict
+    [switch]$ValidateNames,
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Strict Mode") ]
+    [switch]$Strict,    
+    [Parameter(Mandatory=$false)]
+    [ValidateSet(5,7)]
+    [int]$RequiresVersion
 )
 
 
@@ -153,8 +163,16 @@ $Script:TemplateManifestPath           = Join-Path $Script:TemplatePath  'templa
 $Script:FileContent                    = (Get-Content -Path $Script:Header -Encoding "windows-1251" -Raw)
 $Script:FileContent                    = $FileContent -replace "___BUILDDATE___", $Script:Date
 $Script:ScriptList                     = New-Object System.Collections.ArrayList
-$Script:Psm1Content                    = "$FileContent`n`n#Requires -Version 5`nSet-StrictMode -Version 'Latest'`n"
+$Script:Psm1Content                    = "$FileContent`n`n"
 $Script:VersionFile                    = Join-Path $Script:RootPath 'Version.nfo'
+
+If( $PSBoundParameters.ContainsKey('RequiresVersion') -eq $True ){
+    $Script:Psm1Content  += "#Requires -Version $RequiresVersion`n`n"
+}
+
+if($Strict){
+    $Script:Psm1Content  += "Set-StrictMode -Version 'Latest'`n`n"
+}
 
 #===============================================================================
 # Check Folders
@@ -203,7 +221,13 @@ function Show-ExceptionDetails{
 if(Test-Path -Path $Script:BuildConfigPath){
     Write-Host -f DarkRed "[CONFIG] " -NoNewline
     Write-Host "Loading build config '$Script:BuildConfigPath'" -f DarkGray
-    . "$Script:BuildConfigPath"
+    #try{
+        . "$Script:BuildConfigPath"    
+    #}
+    #catch{
+    #    return
+    #}
+    
     Write-Host -f DarkGreen "[CONFIG] " -NoNewline
     Write-Host "Config Loaded!" -f DarkGray
 }
@@ -316,15 +340,21 @@ try{
 
 
     # This is where the module manifest lives
-    if($Strict){
+    if($ValidateNames){
         Write-Host "===============================================================================" -f DarkRed
         Write-Host "VALIDATING FUNCTION NAMES" -f DarkYellow;
         Write-Host "===============================================================================" -f DarkRed  
-        $NumErrors = CheckFunctionVerbs $SourcePath  
+        $NumErrors = Approve-FunctionNames $SourcePath  
         if(($StrictNames= $true) -And ($NumErrors -ne 0)){
             throw "INVALID FUNCTION NAMES: $NumErrors"
         }   
     }
+    $Script:HeadRev =  git rev-parse HEAD
+    Log-String "Updating GIT REVISION [$Script:HeadRev]"
+    $Script:Psm1Content = $Script:Psm1Content -replace '___SCRIPT_MODULE_FILENAME___', $Global:ModuleIdentifier 
+    $Script:Psm1Content = $Script:Psm1Content -replace '___MODULE_VERSION___', "$NewVersionString" 
+    $Script:Psm1Content = $Script:Psm1Content -replace '___MODULE_DESCRIPTION___', "$NewDescription"
+    $Script:Psm1Content = $Script:Psm1Content -replace '___GIT_REV_PARSE___', "$Script:HeadRev"
 
     Write-Host "===============================================================================" -f DarkRed
     Write-Host "UPDATING MANIFEST" -f DarkYellow;
@@ -377,8 +407,7 @@ try{
     (Get-Content -Path $GeneratedModuleManifest) -replace '___MODULE_IDENTIFIER___', "$Global:ModuleIdentifier" | Set-Content -Path $GeneratedModuleManifest -Force
    
 
-    $Script:HeadRev =  git rev-parse HEAD
-    Log-String "Updating GIT REVISION [$Script:HeadRev]"
+    
     (Get-Content -Path $GeneratedModuleManifest) -replace '___GIT_REV_PARSE___', "$Script:HeadRev" | Set-Content -Path $GeneratedModuleManifest -Force
    
 
@@ -392,6 +421,19 @@ try{
     }
 
 Invoke-UnloadModule $Global:ModuleIdentifier $Script:SourcePath
+
+if($Sign){
+    Write-Host "===============================================================================" -f DarkRed
+    Write-Host "SIGNING" -f DarkYellow;
+    Write-Host "===============================================================================" -f DarkRed
+
+    Get-ChildItem -Path "$Script:SourcePath" -File -Filter '*.ps1' | ForEach-Object {
+        $Path = $_.fullname
+        $Filename = $_.Name
+        Add-Signature -Path $Path
+    }
+}
+
 Write-Host "===============================================================================" -f DarkRed
 Write-Host "COMPILING SCRIPT FILE" -f DarkYellow;
 Write-Host "===============================================================================" -f DarkRed
@@ -410,6 +452,7 @@ Get-ChildItem -Path "$Script:SourcePath" -File -Filter '*.ps1' | ForEach-Object 
     $BadChars | % {
         if($ScriptName -match "$_"){ throw "File name '$ScriptName' contains an invalid character '$_'" }
     }
+
 
     try {
         if($Script:CompilationLoadTest){
@@ -541,10 +584,26 @@ if ($Script:CompilationErrorsCount -eq 0) {
     Write-Host -ForegroundColor DarkGreen "[OK] " -NoNewline
     Write-Host "Build complete!"
 
+
     $Psm1Content | Out-File -FilePath $Script:GeneratedModuleScript -Encoding "windows-1251"
+    if($Sign){
+      Add-Signature -Path $Script:GeneratedModuleScript  
+    }
+    
     Write-Host -ForegroundColor DarkGreen "[OK] " -NoNewline
     Write-Host "Script written to file $Script:GeneratedModuleScript"
 }
+
+Write-Host "===============================================================================" -f Red
+Write-Host "===============================================================================" -f Blue;
+Write-Host "===============================================================================" -f Cyan;
+$c = Get-Content $Script:GeneratedModuleScript -Raw
+Write-Host "$c" 
+Write-Host "===============================================================================" -f DarkCyan;
+Write-Host "===============================================================================" -f DarkYellow;
+Write-Host "===============================================================================" -f DarkRed
+
+
 
 if($Script:DebugMode){
     New-Item -Path $Script:OutputSourcePath -Force -ItemType Directory -ErrorAction Ignore | Out-null
@@ -555,15 +614,35 @@ if($Script:DebugMode){
 if($Deploy){
     Sleep 1
     $RegistryPath = "$ENV:OrganizationHKCU\powershell"
-    $DefaultModulePath = Get-RegistryValue $RegistryPath "DefaultModulePath"
 
-    if ($PSBoundParameters.ContainsKey('DeployPath')) { 
-        Log-String "USER-SPECIFIED DEPLOY PATH [$DeployPath]"
-        $DefaultModulePath = $DeployPath
+    Write-Host -ForegroundColor DarkYellow "[WT] " -NoNewline
+    Write-Host "Looking for Module Export Path $RegistryPath"
+    $Script:ModuleExportPath =  Get-RegistryValue $RegistryPath "DefaultModulePath"
+    if(($Script:ModuleExportPath -eq $null) -Or ($Script:ModuleExportPath -eq "")){
+        $ProfileDir=(Get-Item $Profile).DirectoryName
+        $Script:ModuleExportPath = Join-Path $ProfileDir 'Modules' 
+        Write-Host -ForegroundColor DarkYellow "[WT] " -NoNewline
+        Write-Host "Not in registry RETURNED NULL, using profile path"        
+    }
+    $exists=Test-Path $Script:ModuleExportPath -PathType Container
+    if($exists -eq $False){
+        $ProfileDir=(Get-Item $Profile).DirectoryName
+        $Script:ModuleExportPath = Join-Path $ProfileDir 'Modules'
+        Write-Host -ForegroundColor DarkYellow "[WT] " -NoNewline
+        Write-Host "Not in registry, using profile path"           
     }
 
-    if(-not(Test-Path $DefaultModulePath -PathType Container)){ throw "DefaultModulePath ERROR" }
-    $ExportedModulePath = Join-Path $DefaultModulePath $Global:ModuleIdentifier
+    if ($PSBoundParameters.ContainsKey('DeployPath')) { 
+        Write-Host "USER-SPECIFIED DEPLOY PATH [$DeployPath]"
+        $Script:ModuleExportPath = $DeployPath
+    }
+    $exists=Test-Path $Script:ModuleExportPath -PathType Container
+    if($exists -eq $False){ throw "ModuleExportPath $Script:ModuleExportPath ERROR" }
+    Write-Host -ForegroundColor DarkGreen "[OK] " -NoNewline
+    Write-Host "Module Export Path is $ModuleExportPath"
+
+
+    $ExportedModulePath = Join-Path $Script:ModuleExportPath $Global:ModuleIdentifier
     Write-Host "===============================================================================" -f DarkRed
     Write-Host "DEPLOYING MODULE to $ExportedModulePath" -f DarkYellow;
     Write-Host "===============================================================================" -f DarkRed    
@@ -658,3 +737,36 @@ if($Import){
     Show-ExceptionDetails($_) -ShowStack
     return
 }
+# SIG # Begin signature block
+# MIIFxAYJKoZIhvcNAQcCoIIFtTCCBbECAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
+# gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUvVzLWFo1aHJIQvXcZ1i+vJp2
+# GbGgggNNMIIDSTCCAjWgAwIBAgIQmkSKRKW8Cb1IhBWj4NDm0TAJBgUrDgMCHQUA
+# MCwxKjAoBgNVBAMTIVBvd2VyU2hlbGwgTG9jYWwgQ2VydGlmaWNhdGUgUm9vdDAe
+# Fw0yMjAyMDkyMzI4NDRaFw0zOTEyMzEyMzU5NTlaMCUxIzAhBgNVBAMTGkFyc1Nj
+# cmlwdHVtIFBvd2VyU2hlbGwgQ1NDMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+# CgKCAQEA60ec8x1ehhllMQ4t+AX05JLoCa90P7LIqhn6Zcqr+kvLSYYp3sOJ3oVy
+# hv0wUFZUIAJIahv5lS1aSY39CCNN+w47aKGI9uLTDmw22JmsanE9w4vrqKLwqp2K
+# +jPn2tj5OFVilNbikqpbH5bbUINnKCDRPnBld1D+xoQs/iGKod3xhYuIdYze2Edr
+# 5WWTKvTIEqcEobsuT/VlfglPxJW4MbHXRn16jS+KN3EFNHgKp4e1Px0bhVQvIb9V
+# 3ODwC2drbaJ+f5PXkD1lX28VCQDhoAOjr02HUuipVedhjubfCmM33+LRoD7u6aEl
+# KUUnbOnC3gVVIGcCXWsrgyvyjqM2WQIDAQABo3YwdDATBgNVHSUEDDAKBggrBgEF
+# BQcDAzBdBgNVHQEEVjBUgBD8gBzCH4SdVIksYQ0DovzKoS4wLDEqMCgGA1UEAxMh
+# UG93ZXJTaGVsbCBMb2NhbCBDZXJ0aWZpY2F0ZSBSb290ghABvvi0sAAYvk29NHWg
+# Q1DUMAkGBSsOAwIdBQADggEBAI8+KceC8Pk+lL3s/ZY1v1ZO6jj9cKMYlMJqT0yT
+# 3WEXZdb7MJ5gkDrWw1FoTg0pqz7m8l6RSWL74sFDeAUaOQEi/axV13vJ12sQm6Me
+# 3QZHiiPzr/pSQ98qcDp9jR8iZorHZ5163TZue1cW8ZawZRhhtHJfD0Sy64kcmNN/
+# 56TCroA75XdrSGjjg+gGevg0LoZg2jpYYhLipOFpWzAJqk/zt0K9xHRuoBUpvCze
+# yrR9MljczZV0NWl3oVDu+pNQx1ALBt9h8YpikYHYrl8R5xt3rh9BuonabUZsTaw+
+# xzzT9U9JMxNv05QeJHCgdCN3lobObv0IA6e/xTHkdlXTsdgxggHhMIIB3QIBATBA
+# MCwxKjAoBgNVBAMTIVBvd2VyU2hlbGwgTG9jYWwgQ2VydGlmaWNhdGUgUm9vdAIQ
+# mkSKRKW8Cb1IhBWj4NDm0TAJBgUrDgMCGgUAoHgwGAYKKwYBBAGCNwIBDDEKMAig
+# AoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3AgEL
+# MQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQxFgQU0Pa1tkvMxP7Ho4+FhgGn
+# hu9+bkEwDQYJKoZIhvcNAQEBBQAEggEAR9aGXS5AVxBMIKx2Z55dfMbWzOA6QLRd
+# dYGPxRhAwHKTZQThKUmjVn8+APm/IHXMiKF+xxlKjkYrVTINEBuHwqLHPRFQTDYm
+# n6363Jgef+/73IxDNQe66xgL6MdgTH/d94/PiDHrly0qRd9gTNVCc1KhvvFZblEt
+# R/nFBvch9OozWV9dcF5PYFACiWoXkozVB74pQ+BheqNP7T9SByx7l5BjuHgCpgNn
+# JngrbetHKOLCVZgGOVTTxErSPcZX2OYYiov9KUjS86jFO5QTs8EmGie2mtHNBGgq
+# hJo8Qybpzrj2iyKbwPctN+1huArURWf88SsRGD8EG/7r8GuPa0vWng==
+# SIG # End signature block

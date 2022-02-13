@@ -15,7 +15,18 @@ function Submit-AllModules{
 
 function Import-AllModules{
     pushd "$ENV:PSModDev"
-    $AllMods = (gci . -Directory).Name ;  $AllMods | % { $m=$_;write-host -f DarkRed "`nIMPORT $m`n" ; import-module $m -Force ; } ; 
+    $Tmp=(New-TemporaryFile).Fullname
+    $AllMods = (gci . -Directory).Name ;  $AllMods | % { 
+        try{
+            $m=$_;
+            write-host -n -f DarkCyan "[$m]`t`t" ;
+            import-module $m -Force -ErrorAction Stop -DisableNameChecking 2> $Tmp
+            write-host -f DarkGreen "OK" ;
+        }
+        catch{
+            write-host -f DarkRed "ERROR $_" ;
+        }
+     }
 
     popd
 }
