@@ -594,16 +594,6 @@ if ($Script:CompilationErrorsCount -eq 0) {
     Write-Host "Script written to file $Script:GeneratedModuleScript"
 }
 
-Write-Host "===============================================================================" -f Red
-Write-Host "===============================================================================" -f Blue;
-Write-Host "===============================================================================" -f Cyan;
-$c = Get-Content $Script:GeneratedModuleScript -Raw
-Write-Host "$c" 
-Write-Host "===============================================================================" -f DarkCyan;
-Write-Host "===============================================================================" -f DarkYellow;
-Write-Host "===============================================================================" -f DarkRed
-
-
 
 if($Script:DebugMode){
     New-Item -Path $Script:OutputSourcePath -Force -ItemType Directory -ErrorAction Ignore | Out-null
