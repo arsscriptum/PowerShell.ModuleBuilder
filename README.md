@@ -1,7 +1,12 @@
-## ⼕龱ᗪ㠪⼕闩丂ㄒ龱尺 ᗪ㠪ᐯ㠪㇄龱尸爪㠪𝓝ㄒ 
+<#
+  ╓──────────────────────────────────────────────────────────────────────────────────────
+  ║   PowerShell Profile
+  ╙──────────────────────────────────────────────────────────────────────────────────────
+ #>
 
 
-![MODULE BUILDER](https://github.com/codecastor/CodeCastor.PowerShell.ModuleBuilder/raw/main/data/exec.gif)
+
+![MODULE BUILDER](https://github.com/arsscriptum/PowerShell.ModuleBuilder/raw/main/data/exec.gif)
 
 The script will gather relevant files, functions, aliases. Then it will generate the manifest
 file (.psd1) and script file (.psm1). If compression and/or obfuscation is requested, it will
@@ -82,10 +87,4 @@ added consistency between my modules
 龱 Create a template module
 
 
-
-
-Repository
-----------
-
-https://github.com/cybercastor/codecastor.PowerShell.ModuleBuilder
 
