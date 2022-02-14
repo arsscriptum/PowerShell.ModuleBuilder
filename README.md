@@ -1,12 +1,7 @@
-<#
-  ╓──────────────────────────────────────────────────────────────────────────────────────
-  ║   PowerShell Profile
-  ╙──────────────────────────────────────────────────────────────────────────────────────
- #>
+# PowerShell Module Builder
 
 
-
-![MODULE BUILDER](https://github.com/arsscriptum/PowerShell.ModuleBuilder/raw/main/data/exec.gif)
+![MODULE BUILDER](https://raw.githubusercontent.com/arsscriptum/PowerShell.ModuleBuilder/master/data/exec.gif)
 
 The script will gather relevant files, functions, aliases. Then it will generate the manifest
 file (.psd1) and script file (.psm1). If compression and/or obfuscation is requested, it will
