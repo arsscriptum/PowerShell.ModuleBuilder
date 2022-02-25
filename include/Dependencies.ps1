@@ -84,3 +84,47 @@ function Global:Invoke-UnloadModule{
         Show-ExceptionDetails($_) -ShowStack
     }
 }
+
+
+#===============================================================================
+# Profile Functions
+#===============================================================================
+
+function Compare-ModulePathAgainstPermission{
+
+    $VarModPath=$env:PSModulePath
+    $Paths=$VarModPath.Split(';')
+
+    # 1 -> Retrieve my appartenance (My Groups)
+    $id = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $groups = $id.Groups | foreach-object {$_.Translate([Security.Principal.NTAccount])}
+    $GroupList = @() ; ForEach( $g in $groups){  $GroupList += $g ; }
+    Sleep -Milliseconds 500
+    # Create Filter (Modify a folder) based on those groups
+    $filteracl = {$GroupList.Contains($_.IdentityReference) -and ($_.FileSystemRights.ToString() -match 'Modify')}
+    $PathPermissions = @()
+    ForEach($dir in $Paths){
+        if(-not(Test-Path $dir)){ continue;}
+        $i = (Get-Item $dir);
+        $PathPermissions += (Get-Acl $i).Access | Where $filteracl  | Select `
+                                 @{n="Path";e={$i.fullname}},
+                                 @{n="Permission";e={$_.FileSystemRights}}
+    }
+    return $PathPermissions
+}
+
+function Get-UserModulesPath{
+    $VarModPath=$env:PSModulePath
+    $Paths=$VarModPath.Split(';')
+    $PathList = @() ; ForEach( $p in $Paths){  $PathList += $p ; }
+    $P1 = Join-Path (Get-Item $Profile).DirectoryName 'Modules'
+    if($PathList.Contains($P1) -eq $True){
+        return $P1
+    }
+    $PossiblePaths = Compare-ModulePathAgainstPermission
+    if($PossiblePaths.Count -gt 0){
+        return $PossiblePaths[0].Path
+    }
+    return $null
+}
+
