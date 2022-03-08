@@ -82,6 +82,8 @@ $ScriptFullName =(Get-Item -Path $script:MyInvocation.MyCommand.Path).DirectoryN
 # C:\DOCUMENTS\PowerShell\Projects\PowerShell.ModuleBuilder
 # $ENV:PSModuleBuilder
 try{
+    $ErrorOccured = $False
+    [int]$ModulesBuilt = 0
     $CurrentPath = (Get-Location).Path
     $ModuleBuilderName = 'PowerShell.ModuleBuilder'
     $RegistryPath = "$ENV:OrganizationHKCU\$ModuleBuilderName"
@@ -105,7 +107,7 @@ try{
         $FilteredDirCount = $FilteredDir.Count
         Write-Host "[$ModuleBuilderName] " -f DarkRed -NonewLine
         Write-Host "Module Id $Name is refering to $FilteredDirCount modules." -f DarkYellow  
-        if($FilteredDirCount -eq 0){ return }
+        if($FilteredDirCount -eq 0){  throw "not in module directory" ;  }
         ForEach($mdir in $FilteredDir){
             $fullname = $mdir.Fullname
             $mname = $mdir.Name
@@ -122,11 +124,22 @@ try{
             #. "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$Import -Deploy:$Deploy -Strict:$Strict
             . "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$True -Deploy:$True -Strict:$Strict
             popd
+            $ModulesBuilt++
         }
-        popd
+     
     
 }catch{
-    Write-Error $_
+    $ErrorOccured = $True
+    Write-Host "❗❗❗ Build Error" -f DarkYellow ;
+    Show-ExceptionDetails($_)
+}
+finally{
+    if($ErrorOccured -eq $False){
+        Write-Host '[OK] ' -f DarkGreen -NoNewLine
+        Write-Host "$ModulesBuilt Modules compiled" -f Gray 
+    }
+    
+    popd
 }
 
 # SIG # Begin signature block

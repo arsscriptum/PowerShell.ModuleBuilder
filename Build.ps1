@@ -232,7 +232,7 @@ if(Test-Path -Path $Script:BuildConfigPath){
     Write-Host "Config Loaded!" -f DarkGray
 }
 
-Write-Host "===============================================================================" -f DarkRed
+Write-Host "`n`n===============================================================================" -f DarkRed
 Write-Host "BUILDING  MODULE `t" -NoNewLine -f DarkYellow ; Write-Host "$Global:ModuleIdentifier" -f Gray 
 Write-Host "MODULE DEVELOPER `t" -NoNewLine -f DarkYellow;  Write-Host "$ENV:Username" -f Gray 
 #Write-Host "BUILD SCRIPT PATH`t" -NoNewLine -f DarkYellow;  Write-Host "$Script:CurrPath" -f Gray 
@@ -298,7 +298,7 @@ try{
         . "$ENV:PSModCore\src\Converter.ps1"   
     }
     If( $PSBoundParameters.ContainsKey('SkipDependencyCheck') -eq $False ){
-        Write-Host "===============================================================================" -f DarkRed
+        Write-Host "`n`n===============================================================================" -f DarkRed
         Write-Host "CHECKING DEPENDENCIES" -f DarkYellow;
          Write-Host "$Script:BuilderConfig" -f DarkYellow;
         Write-Host "===============================================================================" -f DarkRed    
@@ -316,7 +316,7 @@ try{
 
     Invoke-UnloadModule $Global:ModuleIdentifier $Script:SourcePath
 
-    Write-Host "===============================================================================" -f DarkRed
+    Write-Host "`n`n===============================================================================" -f DarkRed
     Write-Host "GETTING MODULE VERSION" -f DarkYellow;
     Write-Host "===============================================================================" -f DarkRed    
     
@@ -341,7 +341,7 @@ try{
 
     # This is where the module manifest lives
     if($ValidateNames){
-        Write-Host "===============================================================================" -f DarkRed
+        Write-Host "`n`n===============================================================================" -f DarkRed
         Write-Host "VALIDATING FUNCTION NAMES" -f DarkYellow;
         Write-Host "===============================================================================" -f DarkRed  
         $NumErrors = Approve-FunctionNames $SourcePath  
@@ -356,7 +356,7 @@ try{
     $Script:Psm1Content = $Script:Psm1Content -replace '___MODULE_DESCRIPTION___', "$NewDescription"
     $Script:Psm1Content = $Script:Psm1Content -replace '___GIT_REV_PARSE___', "$Script:HeadRev"
 
-    Write-Host "===============================================================================" -f DarkRed
+    Write-Host "`n`n===============================================================================" -f DarkRed
     Write-Host "UPDATING MANIFEST" -f DarkYellow;
     Write-Host "===============================================================================" -f DarkRed       
     Log-String "Updating Module Manifest"
@@ -423,7 +423,7 @@ try{
 Invoke-UnloadModule $Global:ModuleIdentifier $Script:SourcePath
 
 if($Sign){
-    Write-Host "===============================================================================" -f DarkRed
+    Write-Host "`n`n===============================================================================" -f DarkRed
     Write-Host "SIGNING" -f DarkYellow;
     Write-Host "===============================================================================" -f DarkRed
 
@@ -434,7 +434,7 @@ if($Sign){
     }
 }
 
-Write-Host "===============================================================================" -f DarkRed
+Write-Host "`n`n===============================================================================" -f DarkRed
 Write-Host "COMPILING SCRIPT FILE" -f DarkYellow;
 Write-Host "===============================================================================" -f DarkRed
 
@@ -633,7 +633,7 @@ if($Deploy){
 
 
     $ExportedModulePath = Join-Path $Script:ModuleExportPath $Global:ModuleIdentifier
-    Write-Host "===============================================================================" -f DarkRed
+    Write-Host "`n`n===============================================================================" -f DarkRed
     Write-Host "DEPLOYING MODULE to $ExportedModulePath" -f DarkYellow;
     Write-Host "===============================================================================" -f DarkRed    
     $Logfile = (New-TemporaryFile).Fullname
@@ -675,7 +675,7 @@ if($Deploy){
 
 if($Documentation){
     
-    Write-Host "===============================================================================" -f DarkRed
+    Write-Host "`n`n===============================================================================" -f DarkRed
     Write-Host "BUILDING DOCUMENTATION" -f DarkYellow;
     Write-Host "===============================================================================" -f DarkRed
     $CmdPtr = get-command -Name 'New-MarkdownHelp' -ErrorAction Ignore
@@ -717,12 +717,12 @@ if($Documentation){
 }       
 
 if($Import){
-    Write-Host "===============================================================================" -f DarkRed
+    Write-Host "`n`n===============================================================================" -f DarkRed
     Write-Host "IMPORTING MODULE" -f DarkYellow;
     Write-Host "===============================================================================" -f DarkRed
     #Invoke-UnloadModule $Global:ModuleIdentifier $Script:SourcePath
     Remove-Module $Global:ModuleIdentifier -force  -ErrorAction Ignore
-    Import-Module $Global:ModuleIdentifier  -Force -ErrorAction Ignore
+    Import-Module $Global:ModuleIdentifier  -Force -ErrorAction Ignore -SkipEditionCheck -DisableNameChecking -Global
     return
     Write-Host "SourcePath ==> $Script:SourcePath"
     $FuncList=(Get-FunctionList $Script:SourcePath)
