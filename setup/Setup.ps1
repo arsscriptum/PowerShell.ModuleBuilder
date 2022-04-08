@@ -26,23 +26,26 @@ function write-slog {
 }
 
 function Get-ModuleBuilderRoot{
+    [CmdletBinding(SupportsShouldProcess)] param()
 
-    if($ENV:PSModuleBuilder -ne $Null){
-        if(Test-Path $ENV:PSModuleBuilder -PathType Container){
-            return $ENV:PSModuleBuilder
-        }
-    }else{
-        $TmpPath = (Get-Item $Profile).DirectoryName
-        $TmpPath = Join-Path $TmpPath 'Projects\PowerShell.ModuleBuilder'
-        if(Test-Path $TmpPath -PathType Container){
-            $ModuleBuilder = $TmpPath
-            return $ModuleBuilder
-        }
-
+    $TmpPath = (Get-Item $Profile).DirectoryName
+    $TmpPath = Join-Path $TmpPath 'Projects\PowerShell.ModuleBuilder'
+    if(Test-Path $TmpPath -PathType Container){
+        $ModuleBuilder = $TmpPath
+        Write-Verbose "[GetModuleBuilderRoot] Get-Item Profile, DirectoryName"
+        Write-Verbose "[GetModuleBuilderRoot] $ModuleBuilder"
+        return $ModuleBuilder
     }
+    
     $mydocuments = [environment]::getfolderpath("mydocuments") 
     $ModuleBuilder = Join-Path $mydocuments 'PowerShell\Projects\PowerShell.ModuleBuilder'
-    return $ModuleBuilder
+    if(Test-Path $ModuleBuilder -PathType Container){
+        Write-Verbose "[GetModuleBuilderRoot] getfolderpath, mydocuments"
+        Write-Verbose "[GetModuleBuilderRoot] $ModuleBuilder"        
+        return $ModuleBuilder
+    }
+    Write-Verbose "[GetModuleBuilderRoot] ENV:PSModuleBuilder"      
+    return $ENV:PSModuleBuilder
 }
 
 
