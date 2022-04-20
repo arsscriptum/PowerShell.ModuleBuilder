@@ -1,8 +1,12 @@
 <#
-  ╓──────────────────────────────────────────────────────────────────────────────────────
-  ║   PowerShell.ModuleBuilder      
-  ╙──────────────────────────────────────────────────────────────────────────────────────
- #>
+#̷𝓍   𝓐𝓡𝓢 𝓢𝓒𝓡𝓘𝓟𝓣𝓤𝓜 
+#̷𝓍   
+#̷𝓍   PowerShell.ModuleBuilder
+#̷𝓍 
+#̷𝓍   <guillaumeplante.qc@gmail.com>
+#̷𝓍   https://arsscriptum.github.io/
+#>
+
 
 <#
 .SYNOPSIS
@@ -525,6 +529,43 @@ function ConvertFrom-Base64CompressedScriptBlock {
     `$ScriptBlockDecompressed
 }
 
+
+`$AssemblyFolder = "`$PSScriptRoot\assemblies"
+if(Test-Path "`$AssemblyFolder" -PathType 'Container'){
+    `$Assembly = @( Get-ChildItem -Path "`$AssemblyFolder\*.dll" -ErrorAction SilentlyContinue )    
+}
+
+
+`$FoundErrors = @(
+    Foreach (`$Import in @(`$Assembly)) {
+        try {
+            Add-Type -Path `$Import.Fullname -ErrorAction Stop
+        } catch [System.Reflection.ReflectionTypeLoadException] {
+            Write-Warning "Processing `$(`$Import.Name) Exception: `$(`$_.Exception.Message)"
+            `$LoaderExceptions = `$(`$_.Exception.LoaderExceptions) | Sort-Object -Unique
+            foreach (`$E in `$LoaderExceptions) {
+                Write-Warning "Processing `$(`$Import.Name) LoaderExceptions: `$(`$E.Message)"
+            }
+            `$true
+            #Write-Error -Message "StackTrace: `$(`$_.Exception.StackTrace)"
+        } catch {
+            Write-Warning "Processing `$(`$Import.Name) Exception: `$(`$_.Exception.Message)"
+            `$LoaderExceptions = `$(`$_.Exception.LoaderExceptions) | Sort-Object -Unique
+            foreach (`$E in `$LoaderExceptions) {
+                Write-Warning "Processing `$(`$Import.Name) LoaderExceptions: `$(`$E.Message)"
+            }
+            `$true
+            #Write-Error -Message "StackTrace: `$(`$_.Exception.StackTrace)"
+        }
+    }
+)
+
+if (`$FoundErrors.Count -gt 0) {
+    `$ModuleName = (Get-ChildItem `$PSScriptRoot\*.psd1).BaseName
+    Write-Warning "Importing module `$ModuleName failed. Fix errors before continuing."
+    break
+}
+
 # For each scripts in the module, decompress and load it.
 # Set a flag in the Script Scope so that the scripts know we are loading a module
 # so he can have a specific logic
@@ -705,10 +746,27 @@ if($Documentation){
     Write-Host '[GENERATE DOCUMENTATION] ' -f DarkCyan -NoNewLine
     Write-Host "Markdown Documentation for $Global:ModuleIdentifier ==> $Script:DocPath" -f Gray
 
-    New-MarkdownHelp -Module $Global:ModuleIdentifier -OutputFolder "$Script:DocPath" -Force | Out-null
+    try{
+        New-MarkdownHelp -Module $Global:ModuleIdentifier -OutputFolder "$Script:DocPath" -Force -ErrorAction Stop | Out-null    
+    }catch{
+        Write-Host '[GENERATE DOCUMENTATION] ' -f DarkRed -NoNewLine
+        Write-Host "Error Occured" -f DarkYellow
+        Show-ExceptionDetails $_
+    }
+    
     # $xplorer=(Get-command explorer.exe).Source
     # &$xplorer $Script:DocPath
-    New-ExternalHelp -Path $Script:DocPath -OutputPath "$Script:DocPath\help\en-US\" -Force | Out-null
+
+
+    try{
+        New-ExternalHelp -Path $Script:DocPath -OutputPath "$Script:DocPath\help\en-US\" -Force -ErrorAction Stop | Out-null
+    }catch{
+        Write-Host '[GENERATE DOCUMENTATION] ' -f DarkRed -NoNewLine
+        Write-Host "Error Occured" -f DarkYellow
+        Show-ExceptionDetails $_
+    }
+    
+    
     if(Test-Path -Path '.\docs.ps1'){
         . .\docs.ps1
     }    
