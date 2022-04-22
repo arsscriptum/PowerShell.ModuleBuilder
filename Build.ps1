@@ -71,7 +71,6 @@ param(
     [switch]$Deploy,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Deploy after build") ]
-    [Alias('s')]
     [switch]$Sign,    
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Skip DependencyCheck") ]
@@ -82,11 +81,9 @@ param(
     [switch]$ValidateNames,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Push after build") ]
-    [Alias('p')]
     [switch]$Push,    
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Edit after build") ]
-    [Alias('e')]
     [switch]$Edit,     
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Strict Mode") ]
