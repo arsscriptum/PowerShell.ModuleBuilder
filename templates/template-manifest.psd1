@@ -11,8 +11,6 @@
 
     ModuleVersion     = '___MODULE_VERSION___'
 
-    RootModule        = '___SCRIPT_MODULE_FILENAME___'
-
     GUID              = '___MODULE_GUID___'
 
     CompanyName       = 'Unknown'

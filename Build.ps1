@@ -177,6 +177,9 @@ $Script:FileContent                    = $FileContent -replace "___BUILDDATE___"
 $Script:ScriptList                     = New-Object System.Collections.ArrayList
 $Script:Psm1Content                    = "$FileContent`n`n"
 $Script:VersionFile                    = Join-Path $Script:RootPath 'Version.nfo'
+$Script:DescriptionFile                = Join-Path $Script:RootPath 'Description.nfo'
+$Script:ModuleDescription              = ''
+$Script:ModuleDescriptionTemplate      = "MODULE $Global:ModuleIdentifier on $Script:Date"
 
 If( $PSBoundParameters.ContainsKey('RequiresVersion') -eq $True ){
     $Script:Psm1Content  += "#Requires -Version $RequiresVersion`n`n"
@@ -198,6 +201,12 @@ if(-not(Test-Path -Path $Script:VersionFile -PathType Leaf)){
     Write-Host -f DarkRed "[ERROR] " -NoNewline
     Write-Host " + Missing Version File '$Script:VersionFile' (are you in a Module directory)" -f DarkGray
     return
+}
+
+if(-not(Test-Path -Path $Script:DescriptionFile -PathType Leaf)){
+    Write-Host -f Blue "[ERROR] " -NoNewline
+    Write-Host " + Missing Description File '$Script:DescriptionFile', adding the file from template" -f DarkGray
+    Set-Content -Path $Script:DescriptionFile -Value $Script:ModuleDescriptionTemplate
 }
 
 
@@ -400,7 +409,7 @@ try{
     Log-String "Updating GUID [$NewGuid]"
     (Get-Content -Path $GeneratedModuleManifest) -replace '___MODULE_GUID___', "$NewGuid" | Set-Content -Path $GeneratedModuleManifest -Force
    
-    [string]$NewDescription = $Info.Description
+    [string]$NewDescription = Get-Content -Path $Script:DescriptionFile
     Log-String "Updating Description [$NewDescription]"
     (Get-Content -Path $GeneratedModuleManifest) -replace '___MODULE_DESCRIPTION___', "$NewDescription" | Set-Content -Path $GeneratedModuleManifest -Force
 
@@ -717,6 +726,25 @@ if($Deploy){
         Write-Host "ASSEMBLIES ==> $Script:AssembliesPath"
         $Exported = (gci -Path $ExportedAssembliesPath -File -ErrorAction Ignore)
         if($Exported -ne $Null){$Exported.ForEach({ $f = ''; Write-Host -n -f DarkGreen "[OK] ";Write-Host "$f"; })}
+    }
+
+    $Script:ModuleRepositoryName = 'LocalModules'
+    $Publish = $True
+    if($Publish){
+        $LocalRepository = Get-PSRepository | Where Name -eq $Script:ModuleRepositoryName
+        if (-not ( $LocalRepository ) ) {
+            Write-Host "$LocalRepository is not Registered"
+            $LocalRepository = Register-PSRepository -Name  $Script:ModuleRepositoryName -SourceLocation $Script:ModuleExportPath
+        }
+
+        $PublishArguments = @{
+            Name = $Global:ModuleIdentifier 
+            Repository = $Script:ModuleRepositoryName 
+            Force = $True 
+            Verbose = $True
+        }
+
+        Publish-Module @PublishArguments
     }
 }
 
