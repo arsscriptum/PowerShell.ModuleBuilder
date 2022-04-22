@@ -66,15 +66,12 @@ param(
     [switch]$Strict,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Push after build") ]
-    [Alias('p')]
     [switch]$Push,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Sign after build") ]
-    [Alias('s')]
     [switch]$Sign,      
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Edit after build") ]
-    [Alias('e')]
     [switch]$Edit,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Publish after build (deploy + official steps)") ]

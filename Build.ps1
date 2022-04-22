@@ -394,6 +394,12 @@ try{
         throw "NO FUNCTIONS TO EXPORT"
     }
 
+
+    Log-String "Updating Description [$NewDescription]"
+    (Get-Content -Path $GeneratedModuleManifest) -replace '__ROOTMODULE_FILE__', "$Script:ModuleScriptFilename" | Set-Content -Path $GeneratedModuleManifest -Force
+
+    
+
     Log-String "Updating Exported Functions List from [$SourcePath]"
     (Get-Content -Path $GeneratedModuleManifest) -replace '___FUNCTION_TO_EXPORT_ANCHOR___', "$ExportedFunctionDecl" | Set-Content -Path $GeneratedModuleManifest -Force
 
@@ -750,7 +756,7 @@ if($Deploy){
             Name = $Global:ModuleIdentifier 
             Repository = $Script:ModuleRepositoryName 
             Force = $True 
-            Verbose = $False
+            Verbose = $Verbose
         }
 
         Publish-Module @PublishArguments

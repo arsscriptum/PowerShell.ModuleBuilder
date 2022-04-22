@@ -9,6 +9,9 @@
 
 @{
 
+
+    RootModule        =  '__ROOTMODULE_FILE__'
+
     ModuleVersion     = '___MODULE_VERSION___'
 
     GUID              = '___MODULE_GUID___'
