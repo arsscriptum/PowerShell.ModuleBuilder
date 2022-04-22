@@ -81,6 +81,14 @@ param(
         HelpMessage="Validate function names") ]
     [switch]$ValidateNames,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Push after build") ]
+    [Alias('p')]
+    [switch]$Push,    
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Edit after build") ]
+    [Alias('e')]
+    [switch]$Edit,     
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Strict Mode") ]
     [switch]$Strict,    
     [Parameter(Mandatory=$false)]
