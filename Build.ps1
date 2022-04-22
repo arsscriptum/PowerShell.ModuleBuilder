@@ -91,6 +91,9 @@ param(
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Strict Mode") ]
     [switch]$Strict,    
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Publish after build (deploy + official steps)") ]
+    [switch]$Publish,      
     [Parameter(Mandatory=$false)]
     [ValidateSet(5,7)]
     [int]$RequiresVersion
@@ -158,7 +161,7 @@ if(Test-Path -Path (Join-Path $Script:RootPath "templates") -PathType Container)
 }else{
     $Script:TemplatePath = Join-Path $Script:CurrPath "templates"
 }
-
+$Script:UpdatedVersion                 = ''
 $Script:ErrorsCount                    = 0
 $Script:StepNumber                     = 0
 $Script:TotalSteps                     = 100
@@ -355,7 +358,8 @@ try{
     [string]$NewVersionString = $NewVersion.ToString()
     Write-Host "Current`t$(($CurrentVersion).Major).$(($CurrentVersion).Minor).$(($CurrentVersion).Build)" -f Gray;
     Write-Host "NEW VER`t$NewVersionString" -f Gray;
- 
+    Set-Content -Path $Script:VersionFile -Value $NewVersionString
+    $Script:UpdatedVersion = $NewVersionString
     # We're going to add 1 to the revision value since a new commit has been merged to Master
     # This means that the major / minor / build values will be consistent across GitHub and the Gallery
 
@@ -729,8 +733,16 @@ if($Deploy){
     }
 
     $Script:ModuleRepositoryName = 'LocalModules'
-    $Publish = $True
+    
     if($Publish){
+        
+        Write-Host "===============================================================================" -f DarkGreen
+        Write-Host "                                ===  PUBLISH MODULE  ===                       " -f DarkCyan;
+        Write-Host "===============================================================================" -f DarkGreen        
+
+        Write-Host -n -f Cyan "[Publish] "
+        Write-Host "Module Version ==> $Script:UpdatedVersion"
+
         $LocalRepository = Get-PSRepository | Where Name -eq $Script:ModuleRepositoryName
         if (-not ( $LocalRepository ) ) {
             Write-Host "$LocalRepository is not Registered"
@@ -741,7 +753,7 @@ if($Deploy){
             Name = $Global:ModuleIdentifier 
             Repository = $Script:ModuleRepositoryName 
             Force = $True 
-            Verbose = $True
+            Verbose = $False
         }
 
         Publish-Module @PublishArguments

@@ -77,6 +77,9 @@ param(
     [Alias('e')]
     [switch]$Edit,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Publish after build (deploy + official steps)") ]
+    [switch]$Publish,          
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Skip DependencyCheck") ]
     [Alias('nodep')]
     [switch]$SkipDependencyCheck,
