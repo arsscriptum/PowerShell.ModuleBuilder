@@ -136,14 +136,9 @@ try{
             pushd $fullname
             $gitstr = Get-GitRevision -r
             [string]$verstr = Get-Content "./Version.nfo"
-           
-            Write-Log " Building $mname"
-            Write-Log "  Module Version ==> $verstr"
-            Write-Log "  GIT Revision   ==> $gitstr"
-            Write-Log "BuildScriptPath $BuildScriptPath"
-            Read-Host 'Press any key...'
+     
             #. "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$Import -Deploy:$Deploy -Strict:$Strict
-            . "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$True -Deploy:$True -Strict:$Strict -Push:$Push -Edit:$Edit -SkipDependencyCheck:$SkipDependencyCheck -ValidateNames:$ValidateNames -Sign:$Sign
+            . "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$True -Deploy:$True -Strict:$Strict -Push:$Push -Publish:$Publish -Edit:$Edit -SkipDependencyCheck:$SkipDependencyCheck -ValidateNames:$ValidateNames -Sign:$Sign -Verbose:$Verbose
             
             $ModulesBuilt++
         }

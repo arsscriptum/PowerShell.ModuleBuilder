@@ -81,7 +81,10 @@ param(
     [switch]$ValidateNames,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Push after build") ]
-    [switch]$Push,    
+    [switch]$Push,  
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Force") ]
+    [switch]$Force,    
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Edit after build") ]
     [switch]$Edit,     
@@ -553,15 +556,18 @@ function ConvertFrom-Base64CompressedScriptBlock {
     `$ScriptBlockDecompressed
 }
 
-
+`$AssembliesFound = `$False
 `$AssemblyFolder = "`$PSScriptRoot\assemblies"
 if(Test-Path "`$AssemblyFolder" -PathType 'Container'){
     `$Assembly = @( Get-ChildItem -Path "`$AssemblyFolder\*.dll" -ErrorAction SilentlyContinue )    
+    `$AssemblyCount = `$Assembly.Count
+    if(`$AssemblyCount -gt 0 ){ `$AssembliesFound = `$True }
 }
 
 
-`$FoundErrors = @(
-    Foreach (`$Import in @(`$Assembly)) {
+if(`$AssembliesFound){
+    `$FoundErrors = @(
+      Foreach (`$Import in @(`$Assembly)) {
         try {
             Add-Type -Path `$Import.Fullname -ErrorAction Stop
         } catch [System.Reflection.ReflectionTypeLoadException] {
@@ -581,13 +587,14 @@ if(Test-Path "`$AssemblyFolder" -PathType 'Container'){
             `$true
             #Write-Error -Message "StackTrace: `$(`$_.Exception.StackTrace)"
         }
-    }
-)
+      }
+    )
 
-if (`$FoundErrors.Count -gt 0) {
-    `$ModuleName = (Get-ChildItem `$PSScriptRoot\*.psd1).BaseName
-    Write-Warning "Importing module `$ModuleName failed. Fix errors before continuing."
-    break
+    if (`$FoundErrors.Count -gt 0) {
+        `$ModuleName = (Get-ChildItem `$PSScriptRoot\*.psd1).BaseName
+        Write-Warning "Importing module `$ModuleName failed. Fix errors before continuing."
+        break
+    }
 }
 
 # For each scripts in the module, decompress and load it.
@@ -745,18 +752,15 @@ if($Deploy){
 
         Write-Host -n -f Cyan "[Publish] "
         Write-Host "Module Version ==> $Script:UpdatedVersion"
-
-        $LocalRepository = Get-PSRepository | Where Name -eq $Script:ModuleRepositoryName
-        if (-not ( $LocalRepository ) ) {
-            Write-Host "$LocalRepository is not Registered"
-            $LocalRepository = Register-PSRepository -Name  $Script:ModuleRepositoryName -SourceLocation $Script:ModuleExportPath
-        }
-
+        Write-Host -n -f Cyan "[Publish] "
+        Write-Host "Register-PSRepository $LocalRepository"
+        Unregister-PSRepository -Name  $ModuleRepositoryName -ErrorAction Ignore
+        $LocalRepository = Register-PSRepository -Name  $Script:ModuleRepositoryName -SourceLocation $Script:ModuleExportPath -ErrorAction Ignore
         $PublishArguments = @{
             Name = $Global:ModuleIdentifier 
             Repository = $Script:ModuleRepositoryName 
             Force = $True 
-            Verbose = $Verbose
+            Verbose = $false
         }
 
         Publish-Module @PublishArguments
