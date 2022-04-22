@@ -63,7 +63,26 @@ param(
     [switch]$Deploy,
     [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
         HelpMessage="Validate function names") ]
-    [switch]$Strict
+    [switch]$Strict,
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Push after build") ]
+    [Alias('p')]
+    [switch]$Push,
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Sign after build") ]
+    [Alias('s')]
+    [switch]$Sign,      
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Edit after build") ]
+    [Alias('e')]
+    [switch]$Edit,
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Skip DependencyCheck") ]
+    [Alias('nodep')]
+    [switch]$SkipDependencyCheck,
+    [Parameter(Mandatory=$false,ValueFromPipeline=$true, 
+        HelpMessage="Validate function names") ]
+    [switch]$ValidateNames    
 )
 
 
@@ -95,9 +114,9 @@ try{
     if(-not(Test-Path -Path $BuildScriptPath -PathType Leaf)){ throw "Could not locate Build Script Path" }
 
     Write-Host "===============================================================================" -f DarkRed
-    Write-Host "Build Script       Path `t" -NoNewLine -f DarkYellow ; Write-Host "$BuildScriptPath" -f Gray 
-    Write-Host "Module Builder     Path `t" -NoNewLine -f DarkYellow;  Write-Host "$ModuleBuilderPath" -f Gray 
-    Write-Host "Module Development Path `t" -NoNewLine -f DarkYellow;  Write-Host "$ModuleDevelopmentPath" -f Gray 
+    Write-Host " Build Script       Path `t" -NoNewLine -f DarkYellow ; Write-Host "$BuildScriptPath" -f Gray 
+    Write-Host " Module Builder     Path `t" -NoNewLine -f DarkYellow;  Write-Host "$ModuleBuilderPath" -f Gray 
+    Write-Host " Module Development Path `t" -NoNewLine -f DarkYellow;  Write-Host "$ModuleDevelopmentPath" -f Gray 
     Write-Host "===============================================================================" -f DarkRed   
     If( $PSBoundParameters.ContainsKey('Name') -eq $False ){
         $Name = (Get-Item $CurrentPath).Name
@@ -113,17 +132,17 @@ try{
             $mname = $mdir.Name
             Write-Host "Directory Fullname `t" -NoNewLine -f DarkYellow;  Write-Host "$fullname" -f Gray 
             Write-Host "Directory     name `t" -NoNewLine -f DarkYellow;  Write-Host "$mname" -f Gray 
-            Write-ChannelMessage "Switching to $fullname"
+            Write-Log "Switching to $fullname"
             pushd $fullname
             $gitstr = Get-GitRevision -r
             [string]$verstr = Get-Content "./Version.nfo"
            
-            Write-ChannelMessage " Building $mname"
-            Write-ChannelMessage "  Module Version ==> $verstr"
-            Write-ChannelMessage "  GIT Revision   ==> $gitstr"
+            Write-Log " Building $mname"
+            Write-Log "  Module Version ==> $verstr"
+            Write-Log "  GIT Revision   ==> $gitstr"
             #. "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$Import -Deploy:$Deploy -Strict:$Strict
-            . "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$True -Deploy:$True -Strict:$Strict
-            popd
+            . "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$True -Deploy:$True -Strict:$Strict -Push:$Push -Edit:$Edit -SkipDependencyCheck:$SkipDependencyCheck -ValidateNames:$ValidateNames -Sign:$Sign
+            
             $ModulesBuilt++
         }
      
@@ -134,8 +153,13 @@ try{
     Show-ExceptionDetails($_)
 }
 finally{
+    popd
     if($ErrorOccured -eq $False){
-        Write-Host '[OK] ' -f DarkGreen -NoNewLine
+        Write-Host "`n`n===============================================================================" -f DarkRed
+        Write-Host " BUILD RESULTS" -f DarkYellow;
+        Write-Host "===============================================================================" -f DarkRed
+
+        Write-Host "[SUCCESS] " -f DarkGreen -n
         Write-Host "$ModulesBuilt Modules compiled" -f Gray 
     }
     
