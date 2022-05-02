@@ -675,7 +675,7 @@ if($Script:DebugMode){
 }
 if($Deploy){
     Sleep 1
-    $RegistryPath = "$ENV:OrganizationHKCU\powershell"
+    $RegistryPath = "$ENV:OrganizationHKCU\PowerShell.Configuration"
 
     Write-Host -ForegroundColor DarkYellow "[WT] " -NoNewline
     Write-Host "Looking for Module Export Path $RegistryPath"
@@ -750,12 +750,21 @@ if($Deploy){
         Write-Host "                                ===  PUBLISH MODULE  ===                       " -f DarkCyan;
         Write-Host "===============================================================================" -f DarkGreen        
 
-        Write-Host -n -f Cyan "[Publish] "
-        Write-Host "Module Version ==> $Script:UpdatedVersion"
-        Write-Host -n -f Cyan "[Publish] "
-        Write-Host "Register-PSRepository $LocalRepository"
-        Unregister-PSRepository -Name  $ModuleRepositoryName -ErrorAction Ignore
-        $LocalRepository = Register-PSRepository -Name  $Script:ModuleRepositoryName -SourceLocation $Script:ModuleExportPath -ErrorAction Ignore
+        try{
+            Remove-Module PowerShellGet
+            Uninstall-Module PowerShellGet
+            Install-ModuleToDirectory -Name PowerShellGet -Path  $Script:ModuleExportPath -Import
+
+            Write-Host -n -f Cyan "[Publish] "
+            Write-Host "Module Version ==> $Script:UpdatedVersion"
+            Write-Host -n -f Cyan "[Publish] "
+            Write-Host "Register-PSRepository Name is $Script:ModuleRepositoryName SourceLocation is $Script:ModuleExportPath"
+            Unregister-PSRepository -Name  $ModuleRepositoryName -ErrorAction Ignore
+            $LocalRepository = Register-PSRepository -Name  $Script:ModuleRepositoryName -SourceLocation $Script:ModuleExportPath -ErrorAction Ignore
+            Set-PSRepository -Name $Script:ModuleRepositoryName -InstallationPolicy Trusted
+        }catch{
+            Write-Host "Warning in publish setup: $_ " -f DarkCyan;
+        }
         $PublishArguments = @{
             Name = $Global:ModuleIdentifier 
             Repository = $Script:ModuleRepositoryName 
@@ -763,7 +772,15 @@ if($Deploy){
             Verbose = $false
         }
 
-        Publish-Module @PublishArguments
+        Write-Host "Publish Module..."
+    
+        try{
+            Publish-Module @PublishArguments -EA Stop
+        }catch{
+            throw "Publish errors $_"
+        }
+        Write-Host -ForegroundColor DarkGreen "[OK] " -NoNewline
+        Write-Host "Module Published"
     }
 }
 
