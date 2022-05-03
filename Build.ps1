@@ -751,8 +751,10 @@ if($Deploy){
         Write-Host "===============================================================================" -f DarkGreen        
 
         try{
-            Remove-Module PowerShellGet
-            Uninstall-Module PowerShellGet
+            Write-Host -n -f Cyan "[Publish] "
+            Write-Host "preparing dependencies..."
+            Remove-Module PowerShellGet -ErrorAction Ignore
+            Uninstall-Module PowerShellGet -ErrorAction Ignore
             Install-ModuleToDirectory -Name PowerShellGet -Path  $Script:ModuleExportPath -Import
 
             Write-Host -n -f Cyan "[Publish] "
