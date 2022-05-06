@@ -1,7 +1,12 @@
 <#
-#̷\   ⼕龱ᗪ㠪⼕闩丂ㄒ龱尺 ᗪ㠪ᐯ㠪㇄龱尸爪㠪𝓝ㄒ
-#̷\   🇵​​​​​🇴​​​​​🇼​​​​​🇪​​​​​🇷​​​​​🇸​​​​​🇭​​​​​🇪​​​​​🇱​​​​​🇱​​​​​ 🇸​​​​​🇨​​​​​🇷​​​​​🇮​​​​​🇵​​​​​🇹​​​​​ 🇧​​​​​🇾​​​​​ 🇨​​​​​🇴​​​​​🇩​​​​​🇪​​​​​🇨​​​​​🇦​​​​​🇸​​​​​🇹​​​​​🇴​​​​​🇷​​​​​@🇮​​​​​🇨​​​​​🇱​​​​​🇴​​​​​🇺​​​​​🇩​​​​​.🇨​​​​​🇴​​​​​🇲​​​​​
+#̷𝓍   𝓐𝓡𝓢 𝓢𝓒𝓡𝓘𝓟𝓣𝓤𝓜 
+#̷𝓍   
+#̷𝓍   PowerShell.ModuleBuilder
+#̷𝓍 
+#̷𝓍   <guillaumeplante.qc@gmail.com>
+#̷𝓍   https://arsscriptum.github.io/
 #>
+
 
 [CmdletBinding(SupportsShouldProcess)]
 param (
@@ -136,7 +141,8 @@ $ModuleBuilderPath = Get-ModuleBuilderRoot
 $ModuleDevelopmentPath =  Get-PSModuleDevelopmentRoot
 $BuildScript = Join-Path $ModuleBuilderPath 'Build.ps1'
 $BuildModuleScript = Join-Path $ModuleBuilderPath 'Build-Module.ps1'
-
+$BuildProductionScript = Join-Path $ModuleBuilderPath 'Build-Production.ps1'
+$BuildTestScript = Join-Path $ModuleBuilderPath 'Build-Test.ps1'
 try{
     if($Quiet -eq $False){
         Write-Host "[$DisplayName] " -f Blue -NonewLine
@@ -176,22 +182,60 @@ if($Alias){
         Write-Host "[$DisplayName] "  -f Blue -NonewLine
         Write-Host "configuring alias values" -f White    
     }
-    Remove-Alias -Name make -Force | Out-null
+
+    # ========================================================================
+    # make
+    # ========================================================================
+
+    Remove-Alias -Name make -Force -ErrorAction Ignore| Out-null
     if(Test-Path -Path $BuildScript -PathType Leaf){
         if($Quiet -eq $False){
             Write-Host "[$DisplayName] " -f DarkRed -NonewLine
             Write-Host "`tmake`t`t==>`t$BuildScript" -f DarkYellow
         }
-        New-Alias -Name make -Value "$BuildScript" -Description 'Build a module' -Scope Global
+        New-Alias -Name make -Value "$BuildScript" -Description 'Build a module' -Scope Global -ErrorAction Ignore -Force
     }
-    Remove-Alias -Name makeall -Force | Out-null
+
+    
+    # ========================================================================
+    # makeall
+    # ========================================================================
+
+    Remove-Alias -Name makeall -Force -ErrorAction Ignore| Out-null
     if(Test-Path -Path $BuildModuleScript -PathType Leaf){
         if($Quiet -eq $False){
             Write-Host "[$DisplayName] " -f DarkRed -NonewLine
             Write-Host "`tmakeall`t`t==>`t$BuildModuleScript" -f DarkYellow
         }
-        New-Alias -Name makeall -Value "$BuildModuleScript" -Description 'Build a module' -Scope Global
+        New-Alias -Name makeall -Value "$BuildModuleScript" -Description 'Build a module' -Scope Global -ErrorAction Ignore -Force
+    }    
+
+    # ========================================================================
+    # maketest
+    # ========================================================================
+
+    Remove-Alias -Name maketest -Force -ErrorAction Ignore | Out-null
+    if(Test-Path -Path $BuildTestScript -PathType Leaf){
+        if($Quiet -eq $False){
+            Write-Host "[$DisplayName] " -f DarkRed -NonewLine
+            Write-Host "`maketest`t`t==>`t$BuildTestScript" -f DarkYellow
+        }
+        New-Alias -Name maketest -Value "$BuildTestScript" -Description 'Build a module' -Scope Global -ErrorAction Ignore -Force
     }
+
+    # ========================================================================
+    # makeprod
+    # ========================================================================
+
+    Remove-Alias -Name makeprod -Force -ErrorAction Ignore | Out-null
+    if(Test-Path -Path $BuildProductionScript -PathType Leaf){
+        if($Quiet -eq $False){
+            Write-Host "[$DisplayName] " -f DarkRed -NonewLine
+            Write-Host "`makeprod`t`t==>`t$BuildProductionScript" -f DarkYellow
+        }
+        New-Alias -Name makeprod -Value "$BuildProductionScript" -Description 'Build a PROD module' -Scope Global -ErrorAction Ignore -Force
+    }
+
     if($Quiet -eq $False){
         Write-Host "`n`n[$DisplayName] " -f DarkRed -NonewLine
         Write-Host " To build a module, type 'make' or 'makeall'. Optionally Use -Import -Deploy" -f DarkYellow 

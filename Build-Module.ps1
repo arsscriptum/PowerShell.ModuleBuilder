@@ -138,7 +138,7 @@ try{
             [string]$verstr = Get-Content "./Version.nfo"
      
             #. "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$Import -Deploy:$Deploy -Strict:$Strict
-            . "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$True -Deploy:$True -Strict:$Strict -Push:$Push -Publish:$Publish -Edit:$Edit -SkipDependencyCheck:$SkipDependencyCheck -ValidateNames:$ValidateNames -Sign:$Sign -Verbose:$Verbose
+            . "$BuildScriptPath" -Path "$fullname" -Documentation:$Documentation -Import:$True -Deploy:$True -Strict:$Strict -Push:$Push -Publish:$Publish -Edit:$Edit -SkipDependencyCheck:$SkipDependencyCheck -ValidateNames:$ValidateNames -Sign:$Sign -Verbose:$False
             
             $ModulesBuilt++
         }

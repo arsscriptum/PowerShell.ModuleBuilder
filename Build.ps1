@@ -673,6 +673,70 @@ if($Script:DebugMode){
     Write-Host -ForegroundColor DarkGreen "[OK] " -NoNewline
     Write-Host "DEBUG MODE! Source copied to $Script:OutputSourcePath"
 }
+
+
+if($Documentation){
+    
+    Write-Host "`n`n===============================================================================" -f DarkRed
+    Write-Host "BUILDING DOCUMENTATION" -f DarkYellow;
+    Write-Host "===============================================================================" -f DarkRed
+    $CmdPtr = get-command -Name 'New-MarkdownHelp' -ErrorAction Ignore
+    $ModPtr = Get-Module -Name 'platyPS' -ErrorAction Ignore
+    if(($CmdPtr -eq $null) -Or ($ModPtr -eq $null)){
+        Write-Host "❗❗❗ You requested to generate Documentation, but the required modules are not present: platyPS" -f DarkYellow
+
+        $a = Read-Host 'Do you want to install the required module? (y/n)'
+        if($a -ne 'y'){
+            Write-Host -n -f DarkRed "[EXITING]"
+            return
+        }
+        $installationPath = Get-UserModulesPath
+        Write-Host "⚡ Install platyPS to $installationPath"
+        Install-ModuleToDirectory -Name 'platyPS' -Path "$installationPath" -Import -Force   
+        $CmdPtr = get-command -Name 'New-MarkdownHelp' -ErrorAction Ignore
+        $ModPtr = Get-Module -Name 'platyPS' -ErrorAction Ignore
+        if(($CmdPtr -eq $null) -Or ($ModPtr -eq $null)){
+            Write-Host "❗❗❗ Installation Error" -f DarkYellow
+            return
+        }
+    }
+    Log-String "LOAD MODULE BEFORE Building new function documentation"
+    Invoke-LoadModule $Global:ModuleIdentifier $Script:SourcePath -Global
+    Log-String "Building new function documentation"
+    
+    Write-Host '[GENERATE DOCUMENTATION] ' -f DarkCyan -NoNewLine
+    Write-Host "Markdown Documentation for $Global:ModuleIdentifier ==> $Script:DocPath" -f Gray
+
+    try{
+        New-MarkdownHelp -Module $Global:ModuleIdentifier -OutputFolder "$Script:DocPath" -Force -ErrorAction Stop | Out-null    
+    }catch{
+        Write-Host '[GENERATE DOCUMENTATION] ' -f DarkRed -NoNewLine
+        Write-Host "Error Occured" -f DarkYellow
+        Show-ExceptionDetails $_
+    }
+    
+    # $xplorer=(Get-command explorer.exe).Source
+    # &$xplorer $Script:DocPath
+
+
+    try{
+        New-ExternalHelp -Path $Script:DocPath -OutputPath "$Script:DocPath\help\en-US\" -Force -ErrorAction Stop | Out-null
+    }catch{
+        Write-Host '[GENERATE DOCUMENTATION] ' -f DarkRed -NoNewLine
+        Write-Host "Error Occured" -f DarkYellow
+        Show-ExceptionDetails $_
+    }
+    
+    
+    if(Test-Path -Path '.\docs.ps1'){
+        . .\docs.ps1
+    }    
+
+    Invoke-UnloadModule $Global:ModuleIdentifier $Script:SourcePath
+}       
+
+
+
 if($Deploy){
     Sleep 1
     $RegistryPath = "$ENV:OrganizationHKCU\PowerShell.Configuration"
@@ -787,66 +851,6 @@ if($Deploy){
 }
 
 
-
-if($Documentation){
-    
-    Write-Host "`n`n===============================================================================" -f DarkRed
-    Write-Host "BUILDING DOCUMENTATION" -f DarkYellow;
-    Write-Host "===============================================================================" -f DarkRed
-    $CmdPtr = get-command -Name 'New-MarkdownHelp' -ErrorAction Ignore
-    $ModPtr = Get-Module -Name 'platyPS' -ErrorAction Ignore
-    if(($CmdPtr -eq $null) -Or ($ModPtr -eq $null)){
-        Write-Host "❗❗❗ You requested to generate Documentation, but the required modules are not present: platyPS" -f DarkYellow
-
-        $a = Read-Host 'Do you want to install the required module? (y/n)'
-        if($a -ne 'y'){
-            Write-Host -n -f DarkRed "[EXITING]"
-            return
-        }
-        $installationPath = Get-UserModulesPath
-        Write-Host "⚡ Install platyPS to $installationPath"
-        Install-ModuleToDirectory -Name 'platyPS' -Path "$installationPath" -Import -Force   
-        $CmdPtr = get-command -Name 'New-MarkdownHelp' -ErrorAction Ignore
-        $ModPtr = Get-Module -Name 'platyPS' -ErrorAction Ignore
-        if(($CmdPtr -eq $null) -Or ($ModPtr -eq $null)){
-            Write-Host "❗❗❗ Installation Error" -f DarkYellow
-            return
-        }
-    }
-    Log-String "LOAD MODULE BEFORE Building new function documentation"
-    Invoke-LoadModule $Global:ModuleIdentifier $Script:SourcePath -Global
-    Log-String "Building new function documentation"
-    
-    Write-Host '[GENERATE DOCUMENTATION] ' -f DarkCyan -NoNewLine
-    Write-Host "Markdown Documentation for $Global:ModuleIdentifier ==> $Script:DocPath" -f Gray
-
-    try{
-        New-MarkdownHelp -Module $Global:ModuleIdentifier -OutputFolder "$Script:DocPath" -Force -ErrorAction Stop | Out-null    
-    }catch{
-        Write-Host '[GENERATE DOCUMENTATION] ' -f DarkRed -NoNewLine
-        Write-Host "Error Occured" -f DarkYellow
-        Show-ExceptionDetails $_
-    }
-    
-    # $xplorer=(Get-command explorer.exe).Source
-    # &$xplorer $Script:DocPath
-
-
-    try{
-        New-ExternalHelp -Path $Script:DocPath -OutputPath "$Script:DocPath\help\en-US\" -Force -ErrorAction Stop | Out-null
-    }catch{
-        Write-Host '[GENERATE DOCUMENTATION] ' -f DarkRed -NoNewLine
-        Write-Host "Error Occured" -f DarkYellow
-        Show-ExceptionDetails $_
-    }
-    
-    
-    if(Test-Path -Path '.\docs.ps1'){
-        . .\docs.ps1
-    }    
-
-    Invoke-UnloadModule $Global:ModuleIdentifier $Script:SourcePath
-}       
 
 if($Import){
     Write-Host "`n`n===============================================================================" -f DarkRed
